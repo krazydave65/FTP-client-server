@@ -39,11 +39,24 @@ def recvAll(sock, numBytes):
 	return recvBuff
 
 
+def validFile(filename):
+	if os.path.isfile(filename): 
+		return True
+	else:	
+		print "file does not exist!!!!"
+		return False
 
+
+
+
+
+
+if len(sys.argv) < 2:
+	print "USAGE python " + sys.argv[0] + " <PORT NUMBER>" 
 
 
 # The port on which to listen
-listenPort = 2220
+listenPort = int(sys.argv[1])
 
 # Create a welcome socket. 
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,26 +77,31 @@ while True:
 	control_socket, addr = serverSocket.accept()
 	
 	print "Accepted connection from client: ", addr
-	print "\n"
 
 
 	command = ""
 	while command != "quit":
-		print "waiting to recv()..."
+		print "\nwaiting for request..."
 		command = control_socket.recv(64)
 
-		print "command recv() = ", command
-		#split command by parameters
+
+
 		if len(command.split()) == 2:
 			command, filename = command.split()
-			print "####filename = ", filename , "#######"
+
+			# if command == "get":
+			# 	# Check if filename does not exists
+			# 	if not validFile(filename):
+			# 		print "[client] requested file '",filename,"' does not exist"
+			# 		control_socket.send("FALURE: File '",filename,"' does not exist in server")
+			# 		continue
+
 		elif len(command.split()) == 1:
-			print "##### this is ls #######"
 			pass
 
 
 
-		print "received something buffer..."
+		# print "received something buffer..."
 
 		#check for command
 		if command == "get":
@@ -102,6 +120,7 @@ while True:
 			print "data connection established!!! :)"
 			
 
+			
 			# Open the file
 			fileObj = open(filename, "r")
 
@@ -120,11 +139,11 @@ while True:
 				# Make sure we did not hit EOF
 				if fileData:
 					
-					print "original fileData: ",fileData,"\n\n"
+					# print "original fileData: ",fileData,"\n\n"
 					# Get the size of the data read
 					# and convert it to string
 					dataSizeStr = str(len(fileData))
-					print "original dataSizeStr: ", dataSizeStr
+					# print "original dataSizeStr: ", dataSizeStr
 					
 					# Prepend 0's to the size string
 					# until the size is 10 bytes
@@ -140,11 +159,11 @@ while True:
 					numSent = 0
 					
 					# Send the data!
-					print "prepended 10 bytes len(filedata): ", len(fileData), '--------'
+					# print "prepended 10 bytes len(filedata): ", len(fileData), '--------'
 					while len(fileData) > numSent:
-						print "data sent fileData["+str(numSent)+"]: ", fileData[numSent:]
+						# print "data sent fileData["+str(numSent)+"]: ", fileData[numSent:]
 						numSent += data_sock.send(fileData[numSent:])
-						print "numSent: ", numSent, "\n"
+						# print "numSent: ", numSent, "\n"
 
 				
 				# The file has been read. We are done
@@ -152,15 +171,15 @@ while True:
 					break
 
 
-			print "Sent ", numSent, " bytes."
-				
+
+			print "Sending '" + filename + "' from client <----- server"
+			print "[",numSent, "bytes transfered ]"
 			# Close the socket and the file
 			fileObj.close()
 	
 			
 			#========= Close data connection ================
 			data_sock.close()
-			print "data connection closed..."
 
 		elif command == "quit":
 			pass
@@ -203,9 +222,9 @@ while True:
 
 
 		elif command == "ls":
-			print "received ls command"
+			print "[client] requesting 'ls command'"
 			#set up the ephemeral data connection
-			print "setting up data connection..."
+			# print "setting up data connection..."
 			welcome_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			welcome_sock.bind(('',0))
 			welcome_sock.listen(1)
@@ -213,22 +232,20 @@ while True:
 			ephemeral_port = str(welcome_sock.getsockname()[1]) 
 			control_socket.send(ephemeral_port)
 
-			print "data_sock waiting on port",ephemeral_port
+			# print "data_sock waiting on port",ephemeral_port
 			data_sock, data_addr = welcome_sock.accept()
 			#========= DATA CONNECTION ESTABLISHED ==========
-			print "data connection established!!! :)"
+			# print "data connection established!!! :)"
 			
 			message = ""
 			for line in commands.getstatusoutput('ls')[1:]:
-				print line
 				message += line + ";"
 
 			data_sock.send(message)
-
+			print "[server] responding with 'ls command' results"
 
 			#========= Close data connection ================
 			data_sock.close()
-			print "data_sock connection close!"
 
 		elif not command:
 			print "unecpected interruption to", addr
