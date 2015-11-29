@@ -73,6 +73,7 @@ def validFile(filename):
 	if os.path.isfile(filename): 
 		return True
 	else:	
+		print "file does not exist!!!!"
 		return False
 
 
