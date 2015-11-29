@@ -1,4 +1,0 @@
-hello there
-more text
-
-this is the end of text_client.txt...
